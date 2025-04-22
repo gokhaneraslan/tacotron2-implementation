@@ -95,9 +95,12 @@ The training script expects your dataset in a specific format:
 /base_project_path/
 └── dataset_name/
     ├── metadata.csv
+    ├── list.txt (generated automatically)
     └── wavs/
         ├── audio1.wav
         ├── audio2.wav
+        ├── audio1.npy (generated if configure)
+        ├── audio2.npy (generated if configure)
         └── ...
 ```
 
