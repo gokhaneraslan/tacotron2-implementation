@@ -135,7 +135,6 @@ Each cleaner handles language-specific text normalization, including:
 - Converting numbers to words
 - Handling special characters
 - Normalizing punctuation
-- Converting text to appropriate phonetic representation
 
 ## Training Workflow
 
