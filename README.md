@@ -1,6 +1,6 @@
 # Tacotron 2 TTS Training Implementation
 
-A Python-based implementation for training Tacotron 2 Text-to-Speech (TTS) models. This repository provides tools for preparing your dataset, configuring training parameters, and running the training process with multi-language support.
+A Python-based implementation for training Tacotron 2 Text-to-Speech (TTS) models. This repository provides a comprehensive framework for preparing your dataset, configuring training parameters, and running the training process with multi-language support.
 
 ## Table of Contents
 
@@ -16,12 +16,20 @@ A Python-based implementation for training Tacotron 2 Text-to-Speech (TTS) model
   - [Hardware & Performance](#hardware--performance)
   - [Optimizer & Learning Rate](#optimizer--learning-rate)
   - [Logging & Visualization](#logging--visualization)
-- [Usage Examples](#usage-examples)
-- [Key Configuration Parameters (Needs Attention!)](#key-configuration-parameters-needs-attention)
+- [Usage](#usage)
+  - [Quick Start](#quick-start)
+  - [Example Training Commands](#example-training-commands)
+- [Key Configuration Parameters (⚠️ Needs Attention!)](#key-configuration-parameters-️-needs-attention)
+- [Common Issues and Solutions](#common-issues-and-solutions)
 - [Text Cleaners and Language Support](#text-cleaners-and-language-support)
 - [Output Files](#output-files)
-- [Common Issues and Solutions](#common-issues-and-solutions)
 - [Training Workflow](#training-workflow)
+- [Advanced Features](#advanced-features)
+  - [Mixed Precision Training](#mixed-precision-training)
+  - [Distributed Training](#distributed-training)
+  - [Warm Starting](#warm-starting)
+- [License](#license)
+- [Citations](#citations)
 
 ## Features
 
@@ -36,29 +44,21 @@ A Python-based implementation for training Tacotron 2 Text-to-Speech (TTS) model
   - Checkpointing: Saves model checkpoints periodically and allows resuming training.
   - Warm Start: Ability to initialize training from a pre-trained model's weights.
   - Validation: Performs validation runs at specified intervals.
-  - Distributed Training: Supports multi-GPU training using `torch.distributed`.
   - Mixed-Precision Training (FP16): Option for faster training and reduced memory usage.
-- **Comprehensive Logging:** Monitor progress through console, log files (`training.log`), and TensorBoard.
+  - Distributed Training: Supports multi-GPU training using `torch.distributed`.
+- **Comprehensive Logging:** Monitor training through console, log files (`training.log`), and TensorBoard.
 
 ## Requirements
 
 - Python 3.7+
 - PyTorch (>= 1.7 recommended, check CUDA compatibility if using GPU)
-- CUDA Toolkit & cuDNN (required for GPU acceleration)
+- CUDA Toolkit & cuDNN (for GPU acceleration)
 - Additional Python packages:
 
 ```bash
 pip install torch torchvision torchaudio numpy pyyaml tqdm num2words librosa tensorboard
 ```
 *(Adjust the PyTorch installation command based on your system and CUDA version - see [PyTorch Official Website](https://pytorch.org/))*
-
-Full list of dependencies:
-- NumPy
-- PyYAML (for config loading)
-- Tqdm (for progress bars)
-- Num2Words (for number expansion in text cleaners)
-- Librosa (for audio processing)
-- TensorBoard (for visualization)
 
 ## Setup
 
@@ -68,64 +68,93 @@ Full list of dependencies:
    cd tacotron2-tts-training
    ```
 
-2. **Install requirements:**
+2. **Set up virtual environment (recommended):**
+   ```bash
+   python -m venv venv
+   venv/Scripts/activate # Windows
+   source venv/bin/activate # Linux
+   ```
+
+3. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Prepare your dataset:** (See [Dataset Preparation](#dataset-preparation))
-
-4. **Configure `config.yaml`:** Create and edit `config/config.yaml` (See [Configuration (`config.yaml`)](#configuration-configyaml))
+4. **Install Git LFS (for downloading pretrained models):**
+   ```bash
+   git lfs install
+   ```
 
 ## Dataset Preparation
 
 The training script expects your dataset in a specific format:
 
+### Required Structure
+
 ```
 /base_project_path/
 └── dataset_name/
     ├── metadata.csv
-    ├── list.txt (generated automatically)
     └── wavs/
         ├── audio1.wav
         ├── audio2.wav
-        ├── audio1.npy (generated if configure)
-        ├── audio2.npy (generated if configure)
         └── ...
 ```
 
-1. **Audio Files:** Place all your `.wav` audio files inside a directory named `wavs` within your main dataset directory.
-   - **Critical:** Ensure all `.wav` files have the **same sampling rate** as specified in `config.yaml` (`sampling_rate`).
+### Metadata Format
 
-2. **Metadata File:** Create a metadata file (e.g., `metadata.csv`) in your main dataset directory with the format:
-   ```
-   <wav_filename_without_extension>|<text_1>|<text_2_transcription>
-   ```
-   - Example: `audio1|This is the original text.|This is the normalized transcription.`
-   - The script primarily uses the **third column** (`text_2_transcription`) as the text input.
-   - The delimiter is the pipe symbol (`|`).
+Create a metadata file (e.g., `metadata.csv`) with three pipe-separated columns:
+```
+<wav_filename_without_extension>|<original_text>|<normalized_transcription>
+```
 
-3. **File List (`list.txt`):** Generated automatically by the training script.
-   - Format: `<path/to/audio_or_mel.ext>|<transcription>`
+**Example lines:**
+```
+audio1|This is the original text.|this is the normalized text
+audio2|Another example.|another example
+```
 
-4. **Mel Spectrograms (`.npy`):** (Optional but Recommended for Speed)
-   - If `generate_mels: True`, the script will process `.wav` files and save corresponding Mel spectrograms as `.npy` files.
-   - If `load_mel_from_disk: True`, the script will use these `.npy` files during training, significantly speeding up data loading.
+> **IMPORTANT:** The script primarily uses the **third column** (`normalized_transcription`) as the text input for the model. Ensure this text is clean and suitable for your target language.
+
+### Audio Files
+
+- Place all `.wav` audio files inside a directory named `wavs` within your main dataset directory.
+- **Critical:** Ensure all `.wav` files have the **same sampling rate** as specified in `config.yaml` (`sampling_rate`).
+
+If you don't know your audio's sample rate:
+```python
+import torchaudio
+audio_path = "your_audio_path"  # Check one of your audio files
+print(torchaudio.info(audio_path))
+```
+
+Then set:
+- `sampling_rate` = sample rate from above
+- `mel_fmax` = sample_rate / 2
+
+### File List Generation
+
+The training script will automatically generate or update a file named `list.txt` inside your dataset directory. This file links audio/mel files to their transcriptions for the data loader.
+
+### Mel Spectrogram Generation
+
+- If you set `generate_mels: True` in `config.yaml`, the script will process all `.wav` files and save corresponding Mel spectrograms as `.npy` files.
+- If `load_mel_from_disk: True`, the script will use these pre-generated `.npy` files, which significantly speeds up data loading.
 
 ## Configuration (`config.yaml`)
 
-Create a configuration file at `config/config.yaml`. Here are the key sections and parameters:
+Create a configuration file at `config/config.yaml`. Below is a comprehensive example with key sections:
 
 ### Paths
 
 ```yaml
-# --- Paths (❗ CRITICAL - SET THESE CAREFULLY ❗) ---
+# --- Paths (⚠️ CRITICAL - SET THESE CAREFULLY ⚠️) ---
 base_project_path: /path/to/your/project/tacotron2-implementation # Root directory
 dataset_name: MyTTSDataset             # Name of the dataset directory
 output_base_path: output                # Base directory for outputs
 output_dir_name: checkpoints           # Subdirectory for model checkpoints
 log_dir_name: logs                     # Subdirectory for logs
-model_filename: tacotron_model          # Base name for saved checkpoint files
+model_filename: tacotron_model          # Base name for checkpoint files
 metadata_filename: metadata.csv         # Name of your metadata file
 filelist_name: list.txt                # Name for the generated filelist
 default_pretrained_path: /path/to/pretrained/tacotron2_statedict.pt # Optional path for warm start
@@ -135,10 +164,10 @@ default_pretrained_path: /path/to/pretrained/tacotron2_statedict.pt # Optional p
 
 ```yaml
 # --- Training Control ---
-epochs: 250                     # Total number of training epochs
+epochs: 250                     # Total training epochs
 warm_start: False               # True: Load only model weights, False: Load full checkpoint
-save_interval: 10               # Save main checkpoint every N epochs (0=disable)
-backup_interval: 25             # Save backup checkpoint every N epochs (0=disable)
+save_interval: 10               # Save main checkpoint every N epochs
+backup_interval: 25             # Save backup checkpoint every N epochs
 validation_interval: 5          # Run validation every N epochs
 log_interval: 100               # Log training progress every N iterations
 ```
@@ -146,16 +175,16 @@ log_interval: 100               # Log training progress every N iterations
 ### Data Loading & Preprocessing
 
 ```yaml
-# --- Data Loading & Preprocessing (❗ IMPORTANT ❗) ---
-generate_mels: True             # Generate Mel spectrograms (.npy) before training
-load_mel_from_disk: True        # Load generated .npy Mel files during training (faster)
+# --- Data Loading & Preprocessing (⚠️ IMPORTANT ⚠️) ---
+generate_mels: True             # Generate Mel spectrograms before training
+load_mel_from_disk: True        # Load pre-generated mels during training
 ```
 
 ### Language Selection
 
 ```yaml
-# --- Language Selection (❗ CHOOSE ONE ❗) ---
-text_cleaners: turkish_cleaners # Select cleaner for your dataset language
+# --- Language Selection (⚠️ CHOOSE ONE ⚠️) ---
+text_cleaners: turkish_cleaners # Select the appropriate cleaner for your language
 #text_cleaners: english_cleaners
 #text_cleaners: spanish_cleaners
 # ... other languages ...
@@ -165,18 +194,19 @@ text_cleaners: turkish_cleaners # Select cleaner for your dataset language
 
 ```yaml
 # --- Hardware & Performance ---
-n_gpus: 1                       # Number of GPUs for distributed training
+n_gpus: 1                       # Number of GPUs for training
 rank: 0                         # Process rank for distributed training
-fp16_run: True                  # Enable mixed-precision (FP16) training
+fp16_run: True                  # Enable mixed-precision training
 cudnn_enabled: True             # Enable cuDNN backend
 cudnn_benchmark: True           # Enable cuDNN benchmark mode
-num_workers: 4                  # Number of CPU workers for data loading
+num_workers: 4                  # CPU workers for data loading
+batch_size: 4                   # Adjust based on GPU memory
 ```
 
 ### Audio Parameters
 
 ```yaml
-# --- Audio Parameters (❗ CRITICAL - MATCH YOUR DATASET ❗) ---
+# --- Audio Parameters (⚠️ CRITICAL - MATCH YOUR DATASET ⚠️) ---
 sampling_rate: 22050            # The exact sampling rate of ALL your .wav files
 mel_fmax: 11025.0               # Max frequency for Mel spectrograms (usually sampling_rate / 2)
 ```
@@ -190,6 +220,8 @@ lr_schedule_B: 8000             # Decay rate factor
 lr_schedule_C: 0                # LR schedule offset
 lr_schedule_decay_start: 10000  # Iteration at which LR decay begins
 min_learning_rate: 1e-5         # Minimum learning rate clamp
+p_attention_dropout: 0.1        # Dropout rate for attention
+p_decoder_dropout: 0.1          # Dropout rate for decoder
 ```
 
 ### Logging & Visualization
@@ -197,150 +229,149 @@ min_learning_rate: 1e-5         # Minimum learning rate clamp
 ```yaml
 # --- Logging & Visualization ---
 show_alignments: True           # Log alignment plots to TensorBoard
-alignment_graph_height: 600     # Height of the alignment plot
-alignment_graph_width: 1000     # Width of the alignment plot
+alignment_graph_height: 600     # Height of alignment plot
+alignment_graph_width: 1000     # Width of alignment plot
 ```
 
-## Usage Examples
+## Usage
 
-### Basic Training Workflow
+### Quick Start
 
-| Step | Command | Description |
-|------|---------|-------------|
-| **1. Configure** | `nano config/config.yaml` | Edit configuration file with your paths and settings |
-| **2. First Run** | `python train.py` | Initial run with `generate_mels: True` to create mel spectrograms |
-| **3. Regular Training** | `python train.py` | Subsequent runs with `generate_mels: False` and `load_mel_from_disk: True` |
-| **4. Monitor Progress** | `tensorboard --logdir output/logs` | View training metrics and alignment plots |
+1. **Configure `config/config.yaml`** with your paths and settings
+2. **Prepare your dataset** as described above
+3. **Start training:**
+   ```bash
+   python train.py
+   ```
+4. **Monitor progress:**
+   ```bash
+   tensorboard --logdir /path/to/your/project/output/logs
+   ```
 
-### Configuration Examples for Different Scenarios
+### Example Training Commands
 
-| Scenario | Configuration Settings | Description |
-|----------|------------------------|-------------|
-| **Initial Setup** | `generate_mels: True`<br>`load_mel_from_disk: True` | First run to generate mel spectrograms |
-| **Regular Training** | `generate_mels: False`<br>`load_mel_from_disk: True` | Standard training using cached mels |
-| **Limited GPU Memory** | `batch_size: 4`<br>`fp16_run: True` | Settings for smaller GPU memory |
-| **High-end GPU** | `batch_size: 16`<br>`fp16_run: True` | Settings for larger GPU memory |
-| **English Dataset** | `text_cleaners: english_cleaners`<br>`sampling_rate: 22050` | Configuration for English TTS |
-| **Turkish Dataset** | `text_cleaners: turkish_cleaners`<br>`sampling_rate: 22050` | Configuration for Turkish TTS |
-| **Resume Training** | `warm_start: False`<br>`generate_mels: False` | Continue from last checkpoint |
-| **Transfer Learning** | `warm_start: True`<br>`default_pretrained_path: path/to/model.pt` | Fine-tune from pretrained model |
-| **Multi-GPU Training** | `n_gpus: 4`<br>`batch_size: 32` | Distributed training across 4 GPUs |
+| Purpose | Command | Notes |
+|---------|---------|-------|
+| **Standard Training** | `python train.py` | Uses settings from `config.yaml` |
+| **Monitor Training** | `tensorboard --logdir output/logs` | Open URL in browser (e.g., `http://localhost:6006/`) |
+| **Check Audio Sample Rate** | `python -c "import torchaudio; print(torchaudio.info('path/to/audio.wav'))"` | Verify sampling rate matches `config.yaml` |
 
-## Key Configuration Parameters (Needs Attention!)
+## Key Configuration Parameters (⚠️ Needs Attention!)
 
-Getting these parameters wrong is the most common source of errors:
-
-| Parameter | Importance | Description |
-|-----------|------------|-------------|
-| **`base_project_path`, `dataset_name`** | ⚠️ Critical | Must point to correct directories |
-| **`sampling_rate`** | ⚠️ Critical | MUST match ALL your `.wav` files exactly |
-| **`text_cleaners`** | ⚠️ Critical | Must match your dataset language |
-| **`generate_mels` & `load_mel_from_disk`** | ⚠️ Important | Follow the workflow (first run vs. subsequent runs) |
-| **`batch_size`** | ⚠️ Important | Adjust based on GPU memory (start small, increase if possible) |
-| **`warm_start`** | ⚠️ Important | Controls whether to load only weights or full checkpoint |
-| **`n_gpus`** | ⚠️ Important | Set correctly for distributed training |
-| **`lr_schedule_A`** | ⚠️ Important | Initial learning rate (reduce if training unstable) |
-
-## Text Cleaners and Language Support
-
-The `text_cleaners` parameter selects text normalization rules and character sets for your language:
-
-| Language | Cleaner | Features |
-|----------|---------|----------|
-| **English** | `english_cleaners` | Lowercase conversion, number expansion, punctuation handling |
-| **Turkish** | `turkish_cleaners` | Turkish character normalization (ğ, ş, ı, etc.), number expansion |
-| **Spanish** | `spanish_cleaners` | Spanish-specific characters (ñ, accented vowels), number expansion |
-| **French** | `french_cleaners` | French-specific normalization and number expansion |
-| **German** | `german_cleaners` | German character handling (ä, ö, ü, ß) and number expansion |
-| **Italian** | `italian_cleaners` | Italian-specific normalization |
-| **Portuguese** | `portuguese_cleaners` | Portuguese character handling and normalization |
-| **Russian** | `russian_cleaners` | Cyrillic characters and Russian-specific normalization |
-| **Arabic** | `arabic_cleaners` | Arabic script handling and normalization |
-
-Each cleaner performs:
-- Lowercase conversion
-- Whitespace normalization
-- Language-specific character normalization
-- Number-to-words expansion
-- Punctuation handling
-
-## Output Files
-
-| File Path | Description |
-|-----------|-------------|
-| **`output/checkpoints/tacotron_model.pt`** | Latest main checkpoint (saved every `save_interval` epochs) |
-| **`output/checkpoints/tacotron_model_epoch_<N>.pt`** | Backup checkpoints (saved every `backup_interval` epochs) |
-| **`output/checkpoints/tacotron_model_final.pt`** | Final checkpoint at end of training |
-| **`output/logs/training.log`** | Detailed text logs of training progress |
-| **`output/logs/events.out.tfevents.*`** | TensorBoard event files (loss, learning rate, alignments) |
+| Parameter | Description | Recommendation |
+|-----------|-------------|----------------|
+| `base_project_path`, `dataset_name` | Root paths for your project | Verify these point to correct directories |
+| `sampling_rate` | Audio sample rate | **MUST match** all your `.wav` files exactly |
+| `text_cleaners` | Language cleaner | Must match your dataset's language |
+| `batch_size` | Batch size for training | Start small (4-8) and increase if memory allows |
+| `generate_mels` | Generate spectrograms | `True` for first run, `False` for subsequent runs |
+| `load_mel_from_disk` | Use pre-generated mels | Keep `True` after first run for faster training |
+| `warm_start` | Loading behavior | `True` to load model weights only, `False` to resume from checkpoint |
 
 ## Common Issues and Solutions
 
 | Issue | Possible Causes | Solutions |
 |-------|----------------|-----------|
-| **`FileNotFoundError`** | Incorrect paths in config | Double-check all paths in `config.yaml` |
-| | Missing dataset files | Verify `metadata.csv` and `wavs` directory exist |
+| **`FileNotFoundError`** | Incorrect paths in config | Double-check all paths in `config.yaml` and dataset structure |
 | **`CUDA Out of Memory`** | Batch size too large | Reduce `batch_size` in `config.yaml` |
-| | Other GPU applications running | Close other GPU-intensive applications |
-| **Tensor Shape Mismatch** | Sampling rate mismatch | Ensure `sampling_rate` matches ALL `.wav` files |
-| | Incorrect text cleaner | Verify `text_cleaners` matches dataset language |
-| | Mel generation issues | Check for errors during mel generation |
-| **`NaN` Loss** | Learning rate too high | Reduce `lr_schedule_A` |
-| | Data issues | Check for silent or corrupt audio files |
-| | FP16 instability | Try with `fp16_run: False` |
-| **Slow Training** | Not using pre-generated mels | Set `generate_mels: True` once, then `load_mel_from_disk: True` |
-| | Insufficient workers | Adjust `num_workers` based on CPU cores |
-| | GPU underutilization | Check with `nvidia-smi` that GPU is being used |
-| **Poor Audio Quality** | Insufficient training | Train for more epochs |
-| | Incorrect language cleaner | Verify `text_cleaners` is appropriate |
-| | Data quality issues | Ensure high-quality, clean audio data |
-| | Hyperparameter issues | Tune learning rate, dropout, etc. |
-| **Distributed Training Errors** | Environment setup | Check NCCL installation and firewall settings |
-| | Variable issues | Set proper environment variables (MASTER_ADDR, MASTER_PORT) |
+| **Mismatched tensor shapes** | Sample rate mismatch or wrong cleaner | Verify `sampling_rate` matches WAVs and `text_cleaners` matches language |
+| **`NaN` Loss values** | Learning rate too high or data issues | Reduce `lr_schedule_A` or check for silent/corrupt audio files |
+| **Slow training** | Not using pre-generated mels | Set `generate_mels: True` once, then `load_mel_from_disk: True` |
+| **Poor audio quality** | Wrong cleaner or insufficient training | Verify correct `text_cleaners` for your language and train longer |
+| **Distributed training issues** | Environment setup | Configure environment variables properly and check NCCL installation |
+
+## Text Cleaners and Language Support
+
+The `text_cleaners` parameter selects which set of text normalization rules and character sets to use:
+
+| Language | Cleaner Name | Features |
+|----------|--------------|----------|
+| Turkish | `turkish_cleaners` | Handles Turkish characters (İ, ı, etc.) |
+| English | `english_cleaners` | Standard English processing |
+| Spanish | `spanish_cleaners` | Spanish-specific character handling |
+| French | `french_cleaners` | French accent and character support |
+| German | `german_cleaners` | German-specific characters (ä, ö, ü, ß) |
+| Italian | `italian_cleaners` | Italian accent handling |
+| Portuguese | `portuguese_cleaners` | Portuguese-specific processing |
+| Russian | `russian_cleaners` | Cyrillic character support |
+| Arabic | `arabic_cleaners` | Arabic script handling |
+
+Each cleaner typically performs:
+- Lowercase conversion
+- Whitespace normalization
+- Language-specific character normalization
+- Number-to-words expansion (using `num2words`)
+- Punctuation handling
+
+## Output Files
+
+Training artifacts are saved in the directory specified by `output_base_path`:
+
+| File | Path | Description |
+|------|------|-------------|
+| **Main Checkpoints** | `output/checkpoints/tacotron_model.pt` | Latest checkpoint, saved every `save_interval` epochs |
+| **Backup Checkpoints** | `output/checkpoints/tacotron_model_epoch_<N>.pt` | Backups saved every `backup_interval` epochs |
+| **Final Model** | `output/checkpoints/tacotron_model_final.pt` | Model saved at end of training |
+| **Log File** | `output/logs/training.log` | Detailed training logs |
+| **TensorBoard** | `output/logs/events.out.tfevents.*` | Files for TensorBoard visualization |
 
 ## Training Workflow
 
-1. **Dataset Preparation:**
-   - Organize `.wav` files in the `wavs` directory
-   - Create `metadata.csv` with proper format
-   - Ensure consistent sampling rate across all files
+The script performs these steps automatically based on your `config.yaml`:
 
-2. **Initial Configuration:**
-   - Set `base_project_path`, `dataset_name` correctly
-   - Choose appropriate `text_cleaners` for your language
-   - Set `generate_mels: True` and `load_mel_from_disk: True`
-   - Adjust `batch_size` based on your GPU memory
+1. **Load Configuration:** Reads settings from `config/config.yaml`
+2. **Create/Update Filelist:** Generates/updates `list.txt` using your `metadata.csv`
+3. **Calculate Audio Duration:** Scans `.wav` files to report total duration
+4. **Generate Mel Spectrograms:** Creates `.npy` files for each `.wav` file (if `generate_mels: True`)
+5. **Update Filelist for Mels:** Points to `.npy` files (if `load_mel_from_disk: True`)
+6. **Check Dataset:** Verifies file existence listed in the final `list.txt`
+7. **Initialize Training:** Sets up model, optimizer, data loaders, logger
+8. **Load Checkpoint/Warm Start:** Loads existing checkpoint or pre-trained model if configured
+9. **Start Training Loop:** Begins training with regular validation and checkpoint saving
 
-3. **First Training Run:**
-   ```bash
-   python train.py
-   ```
-   - This will:
-     - Generate mel spectrograms (`.npy` files)
-     - Create/update `list.txt`
-     - Begin initial training
+## Advanced Features
 
-4. **Subsequent Training Runs:**
-   - Set `generate_mels: False` to skip mel generation
-   - Keep `load_mel_from_disk: True` for faster training
-   - Run `python train.py` to continue training
+### Mixed Precision Training
 
-5. **Monitoring Progress:**
-   ```bash
-   tensorboard --logdir output/logs
-   ```
-   - View loss curves
-   - Check alignment plots
-   - Monitor learning rate
+Set `fp16_run: True` to enable mixed precision training, which can significantly speed up training on modern GPUs with minimal accuracy loss.
 
-6. **Fine-tuning (if needed):**
-   - Adjust learning rate if training unstable
-   - Increase/decrease dropout if overfitting/underfitting
-   - Try different batch sizes for performance
+### Distributed Training
 
-7. **Checkpointing:**
-   - Main checkpoint: `tacotron_model.pt`
-   - Backup checkpoints: `tacotron_model_epoch_<N>.pt`
-   - Final model: `tacotron_model_final.pt`
+To use multiple GPUs:
+1. Set `n_gpus` to the number of available GPUs
+2. Ensure NCCL is installed if using Nvidia GPUs
+3. Set appropriate environment variables or use tools like `torchrun`
+
+### Warm Starting
+
+Use the `warm_start` parameter to control how previous checkpoints are loaded:
+
+- `warm_start: True`: Loads only model weights from `checkpoint_path` or `default_pretrained_path`. Useful for fine-tuning on a new dataset or changing optimizers.
+- `warm_start: False`: Loads the entire state (model, optimizer, iteration count, learning rate). Resumes training exactly where it left off.
+
+## License
+
+This implementation builds upon [NVIDIA's Tacotron 2 implementation](https://github.com/NVIDIA/tacotron2), which is licensed under the [BSD 3-Clause License](https://github.com/NVIDIA/tacotron2/blob/master/LICENSE).
+
+## Citations
+
+```
+@article{shen2018natural,
+  title={Natural TTS Synthesis by Conditioning WaveNet on Mel Spectrogram Predictions},
+  author={Shen, Jonathan and Pang, Ruoming and Weiss, Ron J and Schuster, Mike and Jaitly, Navdeep and Yang, Zongheng and Chen, Zhifeng and Zhang, Yu and Wang, Yuxuan and Skerrv-Ryan, Rj and others},
+  journal={IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)},
+  year={2018}
+}
+
+@inproceedings{
+  wang2017tacotron,
+  title={Tacotron: Towards End-to-End Speech Synthesis},
+  author={Yuxuan Wang and RJ Skerry-Ryan and Daisy Stanton and Yonghui Wu and Ron J. Weiss and Navdeep Jaitly and Zongheng Yang and Ying Xiao and Zhifeng Chen and Samy Bengio and Quoc Le and Christopher Dean and Mengdao Yang and George F. Raffel},
+  booktitle={Proceedings of Interspeech},
+  year={2017}
+}
+```
 
 For more details about the Tacotron 2 architecture, refer to the [original paper](https://arxiv.org/abs/1712.05884).
+
+If you don't know how to prepare the dataset, check the [tts-dataset-generator](https://github.com/gokhaneraslan/tts-dataset-generator.git) repository.
