@@ -1,68 +1,3 @@
-1.  **Understand the Goal:** The user wants a `README.md` file for a GitHub repository containing the provided Python code. The README should explain the code, how to use it, and highlight important configurations and potential issues. It needs to be simple and understandable, with examples.
-
-2.  **Identify the Core Functionality:** The provided code is a training script for a Tacotron 2 Text-to-Speech (TTS) model. Key features include:
-    *   Training a Tacotron 2 model.
-    *   Configuration via a `config.yaml` file.
-    *   Data preprocessing (Mel spectrogram generation).
-    *   Support for multiple languages via text cleaners.
-    *   Checkpointing (saving/loading).
-    *   Warm starting from pre-trained models.
-    *   Validation during training.
-    *   Logging (console, file, TensorBoard).
-    *   Distributed training support (multi-GPU).
-    *   FP16/Mixed-precision training support.
-    *   Dataset checking utilities.
-
-3.  **Structure the README:** A standard GitHub README structure works well:
-    *   **Title:** Clear and concise title (e.g., \"Tacotron 2 TTS Implementation\").
-    *   **Introduction/Overview:** Briefly explain what the project is (a Tacotron 2 training script). Mention its purpose (training TTS models).
-    *   **Features:** List the key capabilities identified in step 2.
-    *   **Requirements/Dependencies:** What needs to be installed? (Python, PyTorch, other libraries mentioned like `num2words`, `yaml`, `tqdm`, `numpy`). Mention CUDA for GPU/FP16/Distributed training.
-    *   **Setup/Installation:** How does a user get the code and dependencies ready? (Clone repo, install requirements).
-    *   **Dataset Preparation:** This is crucial for TTS. Explain the expected format (`metadata.csv`, `wavs` folder). Mention the `confirm_and_create_filelist` and `create_mels` steps.
-    *   **Configuration:** Explain the `config.yaml` file. This is the central control panel. Break down the sections (Paths, Training, Data, Model, Performance, Logging). Highlight key parameters.
-    *   **Usage/Training:** How to run the training script (`python train.py`). Explain the pre-training steps performed by the script (filelist creation, duration calculation, mel generation, dataset check).
-    *   **Key Configuration Parameters (Deep Dive/Attention Areas):** Go into more detail on important parameters from `config.yaml` that users *must* pay attention to. Examples: `base_project_path`, `dataset_name`, `text_cleaners`, `sampling_rate`, `batch_size`, `n_gpus`, `warm_start`, `default_pretrained_path`, `generate_mels`, `load_mel_from_disk`. Explain *why* they are important.
-    *   **Text Cleaners and Languages:** Explain how language support works via `text_cleaners` and the corresponding symbol sets. Show how to activate a different language.
-    *   **Output:** What does the script produce? (Checkpoints in `output/checkpoints`, Logs in `output/logs`). Mention TensorBoard.
-    *   **Troubleshooting/Common Issues:** Address potential problems: OOM errors, file not found, NaN loss, slow training. Provide basic suggestions.
-    *   **Contributing (Optional but good practice):** Briefly mention how others can contribute.
-    *   **License (Optional but recommended):** State the license.
-
-4.  **Draft Each Section:**
-
-    *   **Title:** \"Tacotron 2 TTS Training Script\" or similar.
-    *   **Overview:** Write a sentence or two about training Tacotron 2 for TTS.
-    *   **Features:** Bullet point list based on step 2.
-    *   **Requirements:** List `Python 3.x`, `PyTorch` (mention CUDA version if relevant), `librosa` (often needed for audio), `numpy`, `PyYAML`, `tqdm`, `num2words`. Create a `requirements.txt` (or suggest `pip install ...`).
-    *   **Setup:** `git clone ...`, `pip install -r requirements.txt`.
-    *   **Dataset:** Describe `metadata.csv` format (`wav_filename|text1|text2`), the `wavs/` folder. Explain that the script generates `list.txt`. Mention the `sampling_rate` requirement.
-    *   **Configuration:** Create a code block showing a simplified `config.yaml` structure. Explain the purpose of each major setting. Use backticks ` `` ` for variable names.
-    *   **Usage:** Simple command: `python train.py`. Explain the automatic setup steps the script performs.
-    *   **Key Parameters:** This is crucial. Go through the provided config variables one by one.
-        *   `base_project_path`, `dataset_name`, `output_base_path`: User *must* set these correctly.
-        *   `text_cleaners`: Emphasize choosing the *correct* one for the dataset language.
-        *   `sampling_rate`: Must match the dataset audio. Critical importance.
-        *   `batch_size`: Explain the trade-off with GPU memory.
-        *   `n_gpus`: Explain how it enables distributed training.
-        *   `warm_start` / `default_pretrained_path`: Explain resuming vs. fine-tuning.
-        *   `generate_mels` / `load_mel_from_disk`: Explain the workflow (generate once, then load).
-    *   **Text Cleaners:** Show the commented-out options in the config and explain how to uncomment the desired one. List the supported languages based on the cleaners and symbol sets provided.
-    *   **Output:** Describe the `output/checkpoints` and `output/logs` directories. Mention TensorBoard command (`tensorboard --logdir output/logs`).
-    *   **Troubleshooting:** OOM -> reduce `batch_size`. File not found -> check paths in `config.yaml` and dataset structure. NaN loss -> check data quality, learning rate. Slow -> check hardware, `num_workers`, `cudnn_benchmark`.
-    *   **License:** Add a placeholder or suggest adding one (e.g., MIT).
-
-5.  **Refine and Format:**
-    *   Use Markdown formatting (headings `#`, `##`, code blocks ````python ... ````, inline code ` `` `, bold `** **`, italics `* *`, lists `-` or `*`).
-    *   Ensure clarity and simplicity, as requested. Avoid jargon where possible or explain it.
-    *   Use examples, especially for the configuration and usage sections.
-    *   Check for consistency in terminology (e.g., \"checkpoint\", \"Mel spectrogram\").
-    *   Review the \"Areas that need attention\" part of the prompt – ensure the \"Key Configuration Parameters\" and \"Troubleshooting\" sections cover this well. Highlight critical settings.
-    *   Add a Table of Contents if the README becomes long.
-
-6.  **Final Review:** Read through the complete README. Does it accurately reflect the code? Is it easy to understand for someone new to the project? Does it fulfill all user requirements? (Simple explanations, examples, areas needing attention). *Self-correction: Initially, I might just list config options. I need to explicitly call out the *most critical* ones and explain *why* they are critical.* *Self-correction 2: Ensure the dataset preparation steps (metadata, wavs, running the script to generate filelist/mels) are very clear.*"""),
-                types.Part.from_text(text="""Okay, here is a comprehensive `README.md` file based on the Python code snippets and configuration parameters you provided. It explains the setup, configuration, usage, and highlights important aspects.
-
 ```markdown
 # Tacotron 2 TTS Training Implementation
 
@@ -288,14 +223,14 @@ Then open the provided URL (usually `http://localhost:6006/`) in your web browse
 
 Getting these wrong is the most common source of errors or poor results:
 
-*   **`base_project_path`, `dataset_name`, `output_base_path`:** Ensure these paths correctly point to your project structure. Errors here lead to \"File Not Found\".
+*   **`base_project_path`, `dataset_name`, `output_base_path`:** Ensure these paths correctly point to your project structure. Errors here lead to "File Not Found".
 *   **`metadata_filename`, `filelist_name`:** Make sure these match the actual filenames used.
 *   **`sampling_rate`:** MUST match the sampling rate of ALL your `.wav` files exactly. Mismatched rates lead to errors or nonsensical audio output.
 *   **`text_cleaners`:** MUST match the language and character set of your dataset's transcriptions (`metadata.csv`, 3rd column). Using the wrong cleaner will cause errors or poor pronunciation. See [Text Cleaners and Language Support](#text-cleaners-and-language-support).
 *   **`generate_mels` & `load_mel_from_disk`:** Understand the workflow.
     *   First run: `generate_mels: True`, `load_mel_from_disk: True` (or `False` if you want to test on-the-fly generation). This creates `.npy` files.
     *   Subsequent runs: `generate_mels: False`, `load_mel_from_disk: True`. This skips generation and loads the existing `.npy` files, which is much faster.
-*   **`batch_size`:** Needs to be adjusted based on your GPU memory. Start small (e.g., 4, 8, 16) and increase carefully. If you get \"CUDA Out of Memory\" errors, reduce this value.
+*   **`batch_size`:** Needs to be adjusted based on your GPU memory. Start small (e.g., 4, 8, 16) and increase carefully. If you get "CUDA Out of Memory" errors, reduce this value.
 *   **`n_gpus`:** Set to the number of GPUs you want to use. If > 1, ensure distributed training prerequisites (NCCL, etc.) are met.
 *   **`warm_start` & `checkpoint_path` / `default_pretrained_path`:** Understand the difference:
     *   `warm_start: True`: Loads *only* model weights from the specified checkpoint or default path. Resets optimizer and starts training from iteration 0. Good for fine-tuning on a new dataset or changing optimizers.
