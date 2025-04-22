@@ -1,0 +1,81 @@
+base_project_path: /path/to/project/tacotron2-tts-training # Main project directory
+dataset_name: MyTTSDataset # Dataset directory
+output_base_path: output # Base directory for outputs
+output_dir_name: checkpoints  # Subdirectory for model/checkpoints
+log_dir_name: logs # Subdirectory for logs (TensorBoard & file)
+model_filename: tacotron_model # Checkpoint filename (without extension)
+metadata_filename: metadata.csv # Name to metadata file
+filelist_name: list.txt # Name of the filelist to be generated/used
+default_pretrained_path: /path/to/project/tacotron2-tts-training/pretrained_model/tacotron2_statedict.pt # Default pretrained model
+
+n_gpus: 1 # Number of GPUs to use (set > 1 for distributed training)
+rank: 0   # Rank of the current process in distributed training (starts from 0)
+
+warm_start: False  # Load only model weights (True) or full checkpoint (False)?
+epochs: 500 # Total number of epochs
+save_interval: 1 # Save the main checkpoint every N epochs (0 or negative to disable)
+backup_interval: 25 # Save a backup checkpoint every N epochs (0 or negative to disable)
+validation_interval: 5 # Run validation every X epochs
+log_interval: 100 # Log training progress to console every N iterations
+
+
+# --- Data Loading & Preprocessing ---
+
+generate_mels: False # Generate Mel spectrograms before training?
+load_mel_from_disk: True # Load .npy files (True) or generate from .wav (False)?
+
+# -- Supported Languages --
+
+language: turkish
+#anguage: english
+#language: spanish
+#language: french
+#language: german
+#language: italian
+#language: portuguese
+
+
+#Activate your language of train
+
+text_cleaners: turkish_cleaners # Text cleaner(s)
+#text_cleaners: english_cleaners # Text cleaner(s)
+#text_cleaners: spanish_cleaners # Text cleaner(s)
+#text_cleaners: french_cleaners # Text cleaner(s)
+#text_cleaners: german_cleaners # Text cleaner(s)
+#text_cleaners: italian_cleaners # Text cleaner(s)
+#text_cleaners: portuguese_cleaners # Text cleaner(s)
+
+
+batch_size: 2 # Batch size (adjust based on GPU memory)
+num_workers: 4 # Number of workers for DataLoader (adjust based on CPU cores)
+
+# --- Audio Parameters (hparams) ---
+sampling_rate: 22050 # Important: the sampling rate of the audio in your dataset
+mel_fmax: 11025.0  # Maximum frequency for Mel filterbank (sampling_rate / 2)
+
+# --- Model Parameters (hparams) ---
+
+# --- Optimizer & Learning Rate (hparams) ---
+lr_schedule_A: 1e-4       # Initial learning rate for LR schedule
+lr_schedule_B: 8000       # Decay rate for LR schedule
+lr_schedule_C: 0          # LR schedule offset
+lr_schedule_decay_start: 10000 # Iteration to start learning rate decay
+min_learning_rate: 1e-5 # Minimum learning rate
+
+# --- Dropout (hparams) ---
+p_attention_dropout: 0.1  # Dropout rate for attention
+p_decoder_dropout: 0.1 # Dropout rate for decoder
+
+# --- Distributed Training ---
+dynamic_loss_scaling: True # Managed automatically by GradScaler or within Tacotron2Loss
+
+# --- Performance & Hardware ---
+fp16_run: True # Enable FP16 if CUDA is available (checked further in train)
+cudnn_enabled: True # Enable cuDNN
+cudnn_benchmark: False # Enable cuDNN benchmark mode (might be faster if input sizes are constant)
+
+# --- Logging & Visualization ---
+# Enable logging alignments to TensorBoard?
+show_alignments: False # Likely used by the TensorBoard logger
+alignment_graph_height: 600
+alignment_graph_width: 1000
