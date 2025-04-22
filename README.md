@@ -92,10 +92,15 @@ generate_mels: True            # Generate mel spectrograms before training
 load_mel_from_disk: True       # Load pre-generated mels (faster training)
 
 # Language Selection - Choose one!
-text_cleaners: english_cleaners
-#text_cleaners: turkish_cleaners
-#text_cleaners: spanish_cleaners
-# ...other languages...
+text_cleaners: turkish_cleaners # Text cleaner(s)
+#text_cleaners: engilish_cleaners # Text cleaner(s)
+#text_cleaners: spanish_cleaners # Text cleaner(s)
+#text_cleaners: french_cleaners # Text cleaner(s)
+#text_cleaners: german_cleaners # Text cleaner(s)
+#text_cleaners: italian_cleaners # Text cleaner(s)
+#text_cleaners: portuguese_cleaners # Text cleaner(s)
+#text_cleaners: russian_cleaners # Text cleaner(s)
+#text_cleaners: arabic_cleaners # Text cleaner(s)
 
 # Hardware Settings
 n_gpus: 1                      # Number of GPUs for training
@@ -121,11 +126,11 @@ sampling_rate: 22050           # Sampling rate of all WAV files
 Select the appropriate text cleaner for your dataset's language:
 
 ```yaml
-# For English dataset:
-text_cleaners: english_cleaners
-
 # For Turkish dataset:
 text_cleaners: turkish_cleaners
+
+# For English dataset:
+text_cleaners: english_cleaners
 
 # For Spanish dataset:
 text_cleaners: spanish_cleaners
