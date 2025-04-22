@@ -18,14 +18,14 @@ A Python-based implementation for training Tacotron 2 Text-to-Speech (TTS) model
 - CUDA Toolkit & cuDNN (for GPU acceleration)
 - Additional Python packages:
   ```
-  pip install numpy pyyaml tqdm num2words librosa tensorboard
+  pip install -r requirements.txt
   ```
 
 ## Quick Start
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/tacotron2-tts-training.git
+   git clone https://github.com/gokhaneraslan/tacotron2-tts-training.git
    cd tacotron2-tts-training
    ```
 
