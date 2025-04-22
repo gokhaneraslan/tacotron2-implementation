@@ -104,10 +104,10 @@ The training script expects your dataset in a specific format:
     ├── metadata.csv
     ├── list.txt (generated automatically)
     └── wavs/
-        ├── audio1.wav
-        ├── audio2.wav
-        ├── audio1.npy (generated if configure)
-        ├── audio2.npy (generated if configure)
+        ├── segment_1.wav
+        ├── segment_2.wav
+        ├── segment_1.npy (generated if configure)
+        ├── segment_2.npy (generated if configure)
         └── ...
 ```
 
@@ -120,8 +120,8 @@ Create a metadata file (e.g., `metadata.csv`) with three pipe-separated columns:
 
 **Example lines:**
 ```
-audio1|This is the original text.|this is the normalized text
-audio2|Another example.|another example
+segment_1|This is the original text.|this is the normalized text
+segment_2|Another example.|another example
 ```
 
 > **IMPORTANT:** The script primarily uses the **third column** (`normalized_transcription`) as the text input for the model. Ensure this text is clean and suitable for your target language.
