@@ -56,16 +56,15 @@ A Python-based implementation for training Tacotron 2 Text-to-Speech (TTS) model
 - Additional Python packages:
 
 ```bash
-pip install torch torchvision torchaudio numpy pyyaml tqdm num2words librosa tensorboard
+pip install torch torchvision torchaudio tensorboard matplotlib tensorflow numpy PyYAML tqdm num2words librosa inflect scipy
 ```
 *(Adjust the PyTorch installation command based on your system and CUDA version - see [PyTorch Official Website](https://pytorch.org/))*
 
 ## Setup
 
-1. **Clone the repository:**
+1. **Install Git LFS (for downloading pretrained models):**
    ```bash
-   git clone https://github.com/gokhaneraslan/tacotron2-tts-training.git
-   cd tacotron2-tts-training
+   git lfs install
    ```
 
 2. **Set up virtual environment (recommended):**
@@ -75,15 +74,17 @@ pip install torch torchvision torchaudio numpy pyyaml tqdm num2words librosa ten
    source venv/bin/activate # Linux
    ```
 
-3. **Install dependencies:**
+3. **Clone the repository:**
+   ```bash
+   git clone https://github.com/gokhaneraslan/tacotron2-tts-training.git
+   cd tacotron2-tts-training
+   ```
+
+4. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Install Git LFS (for downloading pretrained models):**
-   ```bash
-   git lfs install
-   ```
 
 ## Dataset Preparation
 
@@ -152,7 +153,7 @@ Create a configuration file at `config/config.yaml`. Below is a comprehensive ex
 
 ```yaml
 # --- Paths (⚠️ CRITICAL - SET THESE CAREFULLY ⚠️) ---
-base_project_path: /path/to/your/project/tacotron2-implementation # Root directory
+base_project_path: /path/to/your/project/tacotron2-tts-training # Root directory
 dataset_name: MyTTSDataset             # Name of the dataset directory
 output_base_path: output                # Base directory for outputs
 output_dir_name: checkpoints           # Subdirectory for model checkpoints
@@ -160,7 +161,7 @@ log_dir_name: logs                     # Subdirectory for logs
 model_filename: tacotron_model          # Base name for checkpoint files
 metadata_filename: metadata.csv         # Name of your metadata file
 filelist_name: list.txt                # Name for the generated filelist
-default_pretrained_path: /path/to/pretrained/tacotron2_statedict.pt # Optional path for warm start
+default_pretrained_path: /path/to/your/project/tacotron2-tts-training/pretrained_model/tacotron2_statedict.pt # Optional path for warm start
 ```
 
 ### Training Control
@@ -186,11 +187,30 @@ load_mel_from_disk: True        # Load pre-generated mels during training
 ### Language Selection
 
 ```yaml
+
 # --- Language Selection (⚠️ CHOOSE ONE ⚠️) ---
-text_cleaners: turkish_cleaners # Select the appropriate cleaner for your language
-#text_cleaners: english_cleaners
-#text_cleaners: spanish_cleaners
-# ... other languages ...
+
+language: turkish
+#language: english
+#language: spanish
+#language: french
+#language: german
+#language: italian
+#language: portuguese
+
+```
+
+```yaml
+# --- Text Cleaners Selection (⚠️ CHOOSE ONE ⚠️) ---
+
+text_cleaners: turkish_cleaners # Text cleaner(s)
+#text_cleaners: english_cleaners # Text cleaner(s)
+#text_cleaners: spanish_cleaners # Text cleaner(s)
+#text_cleaners: french_cleaners # Text cleaner(s)
+#text_cleaners: german_cleaners # Text cleaner(s)
+#text_cleaners: italian_cleaners # Text cleaner(s)
+#text_cleaners: portuguese_cleaners # Text cleaner(s)
+
 ```
 
 ### Hardware & Performance
@@ -201,7 +221,7 @@ n_gpus: 1                       # Number of GPUs for training
 rank: 0                         # Process rank for distributed training
 fp16_run: True                  # Enable mixed-precision training
 cudnn_enabled: True             # Enable cuDNN backend
-cudnn_benchmark: True           # Enable cuDNN benchmark mode
+cudnn_benchmark: False           # Enable cuDNN benchmark mode
 num_workers: 4                  # CPU workers for data loading
 batch_size: 4                   # Adjust based on GPU memory
 ```
