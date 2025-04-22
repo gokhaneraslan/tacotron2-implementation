@@ -21,7 +21,7 @@ log_interval: 100 # Log training progress to console every N iterations
 
 # --- Data Loading & Preprocessing ---
 
-generate_mels: False # Generate Mel spectrograms before training?
+generate_mels: True # Generate Mel spectrograms before training?
 load_mel_from_disk: True # Load .npy files (True) or generate from .wav (False)?
 
 # -- Supported Languages --
@@ -76,6 +76,6 @@ cudnn_benchmark: False # Enable cuDNN benchmark mode (might be faster if input s
 
 # --- Logging & Visualization ---
 # Enable logging alignments to TensorBoard?
-show_alignments: False # Likely used by the TensorBoard logger
+show_alignments: True # Likely used by the TensorBoard logger
 alignment_graph_height: 600
 alignment_graph_width: 1000
