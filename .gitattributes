@@ -1,0 +1,1 @@
+pretrained_model/tacotron2_statedict.pt filter=lfs diff=lfs merge=lfs -text
