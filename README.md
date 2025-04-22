@@ -1,4 +1,3 @@
-```markdown
 # Tacotron 2 TTS Training Implementation
 
 This repository contains a Python script for training a Tacotron 2 Text-to-Speech (TTS) model. It provides a framework for preparing your dataset, configuring training parameters, and running the training process, including support for multiple languages, distributed training, and mixed-precision.
@@ -291,4 +290,3 @@ Training artifacts are saved in the directory specified by `output_base_path` re
     *   Verify the `text_cleaners` are appropriate and normalizing text correctly (especially numbers, abbreviations, symbols).
     *   Tune hyperparameters (learning rate schedule, dropout, model size if applicable).
     *   Ensure sufficient data variety.
-```
