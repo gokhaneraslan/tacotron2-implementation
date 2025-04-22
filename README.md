@@ -88,6 +88,12 @@ pip install torch torchvision torchaudio tensorboard matplotlib tensorflow numpy
 
 ## Dataset Preparation
 
+If you're unsure how to prepare your dataset,
+
+please check the [tts-dataset-generator](https://github.com/gokhaneraslan/tts-dataset-generator.git) repository,
+
+which provides tools and instructions for creating properly formatted TTS datasets.
+
 The training script expects your dataset in a specific format:
 
 ### Required Structure
@@ -199,6 +205,7 @@ language: turkish
 #language: portuguese
 
 ```
+### Text Cleaners Selection
 
 ```yaml
 # --- Text Cleaners Selection (⚠️ CHOOSE ONE ⚠️) ---
