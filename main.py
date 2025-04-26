@@ -1054,7 +1054,7 @@ def calculate_audio_duration(dataset_path: Path):
 if __name__ == "__main__":
 
     # --- Load Configuration from YAML ---
-    config_path = Path("config/config.yaml")
+    config_path = Path("./config/config.yaml")
     if not config_path.is_file():
         logging.error(f"Configuration file not found at: {config_path}")
         exit(1)
